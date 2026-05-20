@@ -1,15 +1,21 @@
-FROM lobehub/lobe-chat:latest AS base
+# Build stage - use node image that has npm/npx
+FROM node:24-slim AS build
+
 ARG NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
 ARG NEXT_PUBLIC_CLERK_AUTH_ALLOW_ORIGINS
 ARG NEXT_PUBLIC_ENABLE_NEXT_AUTH
+
 ENV NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
 ENV NEXT_PUBLIC_CLERK_AUTH_ALLOW_ORIGINS=${NEXT_PUBLIC_CLERK_AUTH_ALLOW_ORIGINS}
 ENV NEXT_PUBLIC_ENABLE_NEXT_AUTH=${NEXT_PUBLIC_ENABLE_NEXT_AUTH}
+
 COPY --from=lobehub/lobe-chat:latest /app /app
 WORKDIR /app
-RUN cd /app && npx next build --no-lint 2>&1
+RUN npm i -g corepack@latest && corepack enable && pnpm install --frozen-lockfile && npx next build --no-lint 2>&1
+
+# Final stage
 FROM node:24-slim
-COPY --from=base /app /app
+COPY --from=build /app /app
 WORKDIR /app
 EXPOSE 3210
 CMD ["node", "startServer.js"]
