@@ -1,29 +1,19 @@
 FROM node:24-slim AS builder
-
 ARG NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
 ARG NEXT_PUBLIC_CLERK_AUTH_ALLOW_ORIGINS
 ARG NEXT_PUBLIC_ENABLE_NEXT_AUTH
-
 ENV NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
 ENV NEXT_PUBLIC_CLERK_AUTH_ALLOW_ORIGINS=${NEXT_PUBLIC_CLERK_AUTH_ALLOW_ORIGINS}
 ENV NEXT_PUBLIC_ENABLE_NEXT_AUTH=${NEXT_PUBLIC_ENABLE_NEXT_AUTH}
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV CI=1
-
 RUN apt-get update && apt-get install -y git ca-certificates && rm -rf /var/lib/apt/lists/*
 RUN git clone --depth 1 https://github.com/lobehub/lobe-chat.git /source
 WORKDIR /source
-
-# Remove problematic patches
-RUN rm -rf patches/
-
-# Install pnpm and deps
+RUN rm -rf patches/ pnpm-lock.yaml
 RUN npm i -g corepack@latest && corepack enable
-RUN pnpm install --no-frozen-lockfile --ignore-patches 2>&1
-
-# Build
+RUN pnpm install --no-frozen-lockfile 2>&1
 RUN npx next build --no-lint 2>&1
-
 FROM node:24-slim
 COPY --from=builder /source/.next /app/.next
 COPY --from=builder /source/node_modules /app/node_modules
