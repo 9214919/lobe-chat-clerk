@@ -7,10 +7,11 @@ ENV NEXT_PUBLIC_CLERK_AUTH_ALLOW_ORIGINS=${NEXT_PUBLIC_CLERK_AUTH_ALLOW_ORIGINS}
 ENV NEXT_PUBLIC_ENABLE_NEXT_AUTH=${NEXT_PUBLIC_ENABLE_NEXT_AUTH}
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV CI=1
-RUN apt-get update && apt-get install -y git ca-certificates && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y git ca-certificates jq && rm -rf /var/lib/apt/lists/*
 RUN git clone --depth 1 https://github.com/lobehub/lobe-chat.git /source
 WORKDIR /source
 RUN rm -rf patches/ pnpm-lock.yaml
+RUN cat package.json | jq "del(.pnpm.patchedDependencies)" > package.json.tmp && mv package.json.tmp package.json
 RUN npm i -g corepack@latest && corepack enable
 RUN pnpm install --no-frozen-lockfile 2>&1
 RUN npx next build --no-lint 2>&1
